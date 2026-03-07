@@ -3,7 +3,6 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
-from django.contrib.auth import authenticate
 from .models import User
 from .serializers import UserSerializer
 
@@ -16,14 +15,12 @@ def register(request):
     password = request.data.get('password')
     role = request.data.get('role', 'PATIENT')
     
-    # Vérifier si l'utilisateur existe
     if User.objects.filter(phone=phone).exists():
         return Response(
             {'error': 'Ce numéro est déjà utilisé'},
             status=status.HTTP_400_BAD_REQUEST
         )
     
-    # Créer l'utilisateur
     user = User.objects.create_user(
         phone=phone,
         email=email,
@@ -31,7 +28,6 @@ def register(request):
         role=role
     )
     
-    # Générer les tokens JWT
     refresh = RefreshToken.for_user(user)
     
     return Response({
@@ -48,10 +44,23 @@ def login(request):
     phone = request.data.get('phone')
     password = request.data.get('password')
     
-    # Authentifier l'utilisateur
-    user = authenticate(username=phone, password=password)
+    if not phone or not password:
+        return Response(
+            {'error': 'Téléphone et mot de passe requis'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
     
-    if user is None:
+    # Chercher l'utilisateur par téléphone
+    try:
+        user = User.objects.get(phone=phone)
+    except User.DoesNotExist:
+        return Response(
+            {'error': 'Téléphone ou mot de passe incorrect'},
+            status=status.HTTP_401_UNAUTHORIZED
+        )
+    
+    # Vérifier le mot de passe
+    if not user.check_password(password):
         return Response(
             {'error': 'Téléphone ou mot de passe incorrect'},
             status=status.HTTP_401_UNAUTHORIZED
@@ -69,5 +78,5 @@ def login(request):
 
 @api_view(['POST'])
 def logout(request):
-    """Déconnexion (blacklist du token si configuré)"""
+    """Déconnexion"""
     return Response({'message': 'Déconnecté avec succès'})
