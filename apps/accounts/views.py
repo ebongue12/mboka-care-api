@@ -9,25 +9,15 @@ from .serializers import UserSerializer
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def register(request):
-    """Inscription d'un nouvel utilisateur"""
     phone = request.data.get('phone')
     email = request.data.get('email')
     password = request.data.get('password')
     role = request.data.get('role', 'PATIENT')
     
     if User.objects.filter(phone=phone).exists():
-        return Response(
-            {'error': 'Ce numéro est déjà utilisé'},
-            status=status.HTTP_400_BAD_REQUEST
-        )
+        return Response({'error': 'Ce numéro est déjà utilisé'}, status=status.HTTP_400_BAD_REQUEST)
     
-    user = User.objects.create_user(
-        phone=phone,
-        email=email,
-        password=password,
-        role=role
-    )
-    
+    user = User.objects.create_user(phone=phone, email=email, password=password, role=role)
     refresh = RefreshToken.for_user(user)
     
     return Response({
@@ -36,47 +26,30 @@ def register(request):
         'user': UserSerializer(user).data
     }, status=status.HTTP_201_CREATED)
 
-
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def login(request):
-    """Connexion d'un utilisateur"""
     phone = request.data.get('phone')
     password = request.data.get('password')
     
     if not phone or not password:
-        return Response(
-            {'error': 'Téléphone et mot de passe requis'},
-            status=status.HTTP_400_BAD_REQUEST
-        )
+        return Response({'error': 'Téléphone et mot de passe requis'}, status=status.HTTP_400_BAD_REQUEST)
     
-    # Chercher l'utilisateur par téléphone
     try:
         user = User.objects.get(phone=phone)
     except User.DoesNotExist:
-        return Response(
-            {'error': 'Téléphone ou mot de passe incorrect'},
-            status=status.HTTP_401_UNAUTHORIZED
-        )
+        return Response({'error': 'Téléphone ou mot de passe incorrect'}, status=status.HTTP_401_UNAUTHORIZED)
     
-    # Vérifier le mot de passe
     if not user.check_password(password):
-        return Response(
-            {'error': 'Téléphone ou mot de passe incorrect'},
-            status=status.HTTP_401_UNAUTHORIZED
-        )
+        return Response({'error': 'Téléphone ou mot de passe incorrect'}, status=status.HTTP_401_UNAUTHORIZED)
     
-    # Générer les tokens JWT
     refresh = RefreshToken.for_user(user)
-    
     return Response({
         'access': str(refresh.access_token),
         'refresh': str(refresh),
         'user': UserSerializer(user).data
     })
 
-
 @api_view(['POST'])
 def logout(request):
-    """Déconnexion"""
     return Response({'message': 'Déconnecté avec succès'})
