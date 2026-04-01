@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ staff.full_name }} — Mboka Care Admin</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+  <style>
+    body { background: #F5F7FA; font-family: 'Segoe UI', sans-serif; }
+    .card { border-radius: 16px; border: none; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+    .info-label { font-size: 12px; font-weight: 700; color: #9CA3AF; text-transform: uppercase; letter-spacing: 0.5px; }
+    .info-value { font-size: 15px; font-weight: 500; color: #111827; }
+    .badge-pending { background: #FFF3CD; color: #856404; }
+    .badge-verified { background: #D1FAE5; color: #065F46; }
+    .badge-rejected { background: #FEE2E2; color: #991B1B; }
+    .btn-verify { background: #10B981; border: none; color: white; border-radius: 10px; padding: 10px 24px; font-weight: 600; }
+    .btn-reject { background: #EF4444; border: none; color: white; border-radius: 10px; padding: 10px 24px; font-weight: 600; }
+  </style>
+</head>
+<body>
+<div class="container py-4" style="max-width: 900px;">
+  <div class="d-flex align-items-center gap-3 mb-4">
+    <a href="{% url 'web_admin:dashboard' %}" class="btn btn-outline-secondary btn-sm rounded-3">
+      <i class="fas fa-arrow-left me-1"></i>Retour
+    </a>
+    <h5 class="mb-0 fw-bold">Dossier Personnel de Santé</h5>
+  </div>
+
+  <div class="row g-3">
+    <!-- Infos principales -->
+    <div class="col-md-8">
+      <div class="card p-4">
+        <div class="d-flex align-items-center gap-3 mb-4">
+          <div style="width:64px;height:64px;background:#EFF6FF;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:700;color:#1565C0;">
+            {{ staff.first_name|first }}
+          </div>
+          <div>
+            <h4 class="mb-1 fw-bold">{{ staff.full_name }}</h4>
+            <span class="badge badge-{{ staff.verification_status|lower }} rounded-pill px-3">
+              {% if staff.verification_status == 'PENDING' %}⏳ En attente{% elif staff.verification_status == 'VERIFIED' %}✅ Vérifié{% else %}❌ Rejeté{% endif %}
+            </span>
+            <span class="badge rounded-pill ms-1" style="background:#EDE9FE;color:#7C3AED;">{{ staff.get_staff_type_display }}</span>
+          </div>
+        </div>
+
+        <div class="row g-3">
+          <div class="col-6">
+            <div class="info-label">Téléphone</div>
+            <div class="info-value">{{ staff.phone }}</div>
+          </div>
+          <div class="col-6">
+            <div class="info-label">Email</div>
+            <div class="info-value">{{ staff.email }}</div>
+          </div>
+          <div class="col-6">
+            <div class="info-label">Établissement</div>
+            <div class="info-value">{{ staff.establishment }}</div>
+          </div>
+          <div class="col-6">
+            <div class="info-label">Ville</div>
+            <div class="info-value">{{ staff.city }}</div>
+          </div>
+          <div class="col-6">
+            <div class="info-label">Spécialité</div>
+            <div class="info-value">{{ staff.specialty|default:"Non renseignée" }}</div>
+          </div>
+          <div class="col-6">
+            <div class="info-label">Années d'expérience</div>
+            <div class="info-value">{{ staff.years_experience }} ans</div>
+          </div>
+          <div class="col-6">
+            <div class="info-label">Patients traités</div>
+            <div class="info-value">{{ staff.get_patients_treated_range_display }}</div>
+          </div>
+          <div class="col-6">
+            <div class="info-label">N° Ordre médical</div>
+            <div class="info-value">{{ staff.medical_order_number|default:"Non renseigné" }}</div>
+          </div>
+          <div class="col-6">
+            <div class="info-label">Inscrit le</div>
+            <div class="info-value">{{ staff.created_at|date:"d/m/Y à H:i" }}</div>
+          </div>
+          {% if staff.diploma_document %}
+          <div class="col-12">
+            <div class="info-label">Diplôme</div>
+            <a href="{{ staff.diploma_document.url }}" target="_blank" class="btn btn-outline-primary btn-sm rounded-3 mt-1">
+              <i class="fas fa-file-pdf me-1"></i>Voir le diplôme
+            </a>
+          </div>
+          {% endif %}
+        </div>
+
+        {% if staff.verification_status != 'VERIFIED' %}
+        <div class="d-flex gap-3 mt-4">
+          <button class="btn btn-verify" onclick="verifyStaff('{{ staff.id }}', '{{ staff.full_name }}')">
+            <i class="fas fa-check me-2"></i>Valider ce compte
+          </button>
+          {% if staff.verification_status != 'REJECTED' %}
+          <button class="btn btn-reject" onclick="rejectStaff('{{ staff.id }}', '{{ staff.full_name }}')">
+            <i class="fas fa-times me-2"></i>Rejeter
+          </button>
+          {% endif %}
+        </div>
+        {% else %}
+        <div class="alert alert-success rounded-3 mt-4 mb-0">
+          <i class="fas fa-check-circle me-2"></i>Compte vérifié le {{ staff.verified_at|date:"d/m/Y" }}
+          <button class="btn btn-reject btn-sm ms-3" onclick="rejectStaff('{{ staff.id }}', '{{ staff.full_name }}')">Suspendre</button>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="col-md-4">
+      <div class="card p-3 mb-3 text-center">
+        <div style="font-size:36px;font-weight:700;color:#7C3AED;">{{ staff.total_scans }}</div>
+        <div class="text-muted">Scans QR effectués</div>
+      </div>
+      <div class="card p-3 text-center">
+        <div style="font-size:36px;font-weight:700;color:#059669;">{{ staff.total_patients_followed }}</div>
+        <div class="text-muted">Patients suivis</div>
+      </div>
+    </div>
+
+    <!-- Historique scans -->
+    {% if scans %}
+    <div class="col-12">
+      <div class="card p-4">
+        <h6 class="fw-bold mb-3">Derniers scans QR</h6>
+        <div class="table-responsive">
+          <table class="table table-sm align-middle mb-0">
+            <thead>
+              <tr style="font-size:12px;color:#9CA3AF;">
+                <th>Date</th>
+                <th>Motif</th>
+                <th>Notes</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for scan in scans %}
+              <tr>
+                <td style="font-size:13px;">{{ scan.timestamp|date:"d/m/Y H:i" }}</td>
+                <td>
+                  <span class="badge rounded-pill
+                    {% if scan.motif == 'URGENCE' %}bg-danger{% elif scan.motif == 'CONSULTATION' %}bg-primary{% elif scan.motif == 'SUIVI' %}bg-success{% else %}bg-secondary{% endif %}">
+                    {{ scan.get_motif_display }}
+                  </span>
+                </td>
+                <td style="font-size:13px;color:#6B7280;">{{ scan.notes|default:"—" }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index:9999;">
+  <div id="actionToast" class="toast align-items-center text-white border-0" role="alert" style="border-radius:12px;">
+    <div class="d-flex">
+      <div class="toast-body fw-semibold" id="toastMsg"></div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+function getCookie(name) {
+  let v = document.cookie.match('(^|;) ?' + name + '=([^;]*)(;|$)');
+  return v ? v[2] : null;
+}
+function showToast(message, success=true) {
+  const toast = document.getElementById('actionToast');
+  toast.className = `toast align-items-center text-white border-0 ${success ? 'bg-success' : 'bg-danger'}`;
+  document.getElementById('toastMsg').textContent = message;
+  new bootstrap.Toast(toast, {delay: 3000}).show();
+}
+function verifyStaff(id, name) {
+  if (!confirm(`Valider le compte de ${name} ?`)) return;
+  fetch(`/portail-admin/staff/${id}/verify/`, {method:'POST', headers:{'X-CSRFToken':getCookie('csrftoken')}})
+  .then(r=>r.json()).then(d=>{ showToast(d.message); setTimeout(()=>location.reload(), 1500); });
+}
+function rejectStaff(id, name) {
+  if (!confirm(`Rejeter le compte de ${name} ?`)) return;
+  fetch(`/portail-admin/staff/${id}/reject/`, {method:'POST', headers:{'X-CSRFToken':getCookie('csrftoken')}})
+  .then(r=>r.json()).then(d=>{ showToast(d.message, false); setTimeout(()=>location.reload(), 1500); });
+}
+</script>
+</body>
+</html>

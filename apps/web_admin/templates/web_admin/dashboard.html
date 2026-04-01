@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mboka Care — Admin Personnel de Santé</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+  <style>
+    body { background: #F5F7FA; font-family: 'Segoe UI', sans-serif; }
+    .navbar { background: white; box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+    .stat-card { border-radius: 16px; border: none; }
+    .stat-card .icon-box { width: 52px; height: 52px; border-radius: 14px; display: flex; align-items: center; justify-content: center; }
+    .card { border-radius: 16px; border: none; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+    .badge-pending { background: #FFF3CD; color: #856404; }
+    .badge-verified { background: #D1FAE5; color: #065F46; }
+    .badge-rejected { background: #FEE2E2; color: #991B1B; }
+    .staff-row:hover { background: #F8FAFF; }
+    .btn-verify { background: #10B981; border: none; color: white; border-radius: 8px; padding: 6px 14px; font-size: 13px; font-weight: 600; }
+    .btn-verify:hover { background: #059669; color: white; }
+    .btn-reject { background: #EF4444; border: none; color: white; border-radius: 8px; padding: 6px 14px; font-size: 13px; font-weight: 600; }
+    .btn-reject:hover { background: #DC2626; color: white; }
+    .nav-tabs .nav-link { border: none; color: #6B7280; font-weight: 500; padding: 10px 20px; }
+    .nav-tabs .nav-link.active { color: #1565C0; border-bottom: 3px solid #1565C0; background: none; font-weight: 600; }
+    .section-title { font-size: 13px; font-weight: 700; color: #9CA3AF; letter-spacing: 0.5px; text-transform: uppercase; }
+    .toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 9999; }
+  </style>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar px-4 py-3 mb-4">
+  <div class="d-flex align-items-center gap-3">
+    <div style="width:40px;height:40px;background:#1565C0;border-radius:10px;display:flex;align-items:center;justify-content:center;">
+      <i class="fas fa-heart-pulse text-white"></i>
+    </div>
+    <div>
+      <div class="fw-bold" style="font-size:16px;">Mboka Care</div>
+      <div class="text-muted" style="font-size:12px;">Portail Administration</div>
+    </div>
+  </div>
+  <div class="d-flex align-items-center gap-3 ms-auto">
+    <span class="text-muted" style="font-size:14px;"><i class="fas fa-user-shield me-1"></i>{{ request.user.first_name|default:request.user.phone }}</span>
+    <a href="{% url 'web_admin:logout' %}" class="btn btn-outline-secondary btn-sm rounded-3">
+      <i class="fas fa-sign-out-alt me-1"></i>Déconnexion
+    </a>
+  </div>
+</nav>
+
+<div class="container-fluid px-4" style="max-width: 1200px; margin: 0 auto;">
+
+  <!-- Stats -->
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+      <div class="card stat-card p-3">
+        <div class="d-flex align-items-center gap-3">
+          <div class="icon-box" style="background:#FFF3CD;"><i class="fas fa-clock" style="color:#D97706;font-size:20px;"></i></div>
+          <div>
+            <div style="font-size:28px;font-weight:700;line-height:1;">{{ stats.pending_count }}</div>
+            <div class="text-muted" style="font-size:13px;">En attente</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card stat-card p-3">
+        <div class="d-flex align-items-center gap-3">
+          <div class="icon-box" style="background:#D1FAE5;"><i class="fas fa-check-circle" style="color:#059669;font-size:20px;"></i></div>
+          <div>
+            <div style="font-size:28px;font-weight:700;line-height:1;">{{ stats.verified_count }}</div>
+            <div class="text-muted" style="font-size:13px;">Vérifiés</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card stat-card p-3">
+        <div class="d-flex align-items-center gap-3">
+          <div class="icon-box" style="background:#FEE2E2;"><i class="fas fa-times-circle" style="color:#DC2626;font-size:20px;"></i></div>
+          <div>
+            <div style="font-size:28px;font-weight:700;line-height:1;">{{ stats.rejected_count }}</div>
+            <div class="text-muted" style="font-size:13px;">Rejetés</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card stat-card p-3">
+        <div class="d-flex align-items-center gap-3">
+          <div class="icon-box" style="background:#EDE9FE;"><i class="fas fa-qrcode" style="color:#7C3AED;font-size:20px;"></i></div>
+          <div>
+            <div style="font-size:28px;font-weight:700;line-height:1;">{{ stats.total_scans }}</div>
+            <div class="text-muted" style="font-size:13px;">Scans QR total</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Onglets -->
+  <div class="card p-0 overflow-hidden">
+    <ul class="nav nav-tabs border-bottom px-3 pt-2" id="staffTabs">
+      <li class="nav-item">
+        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#pending-tab">
+          ⏳ En attente
+          {% if stats.pending_count > 0 %}
+          <span class="badge rounded-pill ms-1" style="background:#D97706;font-size:11px;">{{ stats.pending_count }}</span>
+          {% endif %}
+        </button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#verified-tab">
+          ✅ Vérifiés
+        </button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#rejected-tab">
+          ❌ Rejetés
+        </button>
+      </li>
+    </ul>
+
+    <div class="tab-content p-3">
+
+      <!-- EN ATTENTE -->
+      <div class="tab-pane fade show active" id="pending-tab">
+        {% if pending %}
+        <div class="table-responsive">
+          <table class="table align-middle mb-0">
+            <thead>
+              <tr style="font-size:12px;color:#9CA3AF;font-weight:700;text-transform:uppercase;">
+                <th>Nom & Profession</th>
+                <th>Contact</th>
+                <th>Établissement</th>
+                <th>Expérience</th>
+                <th>Inscription</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for s in pending %}
+              <tr class="staff-row">
+                <td>
+                  <div class="d-flex align-items-center gap-2">
+                    <div style="width:42px;height:42px;background:#EFF6FF;border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:700;color:#1565C0;font-size:16px;flex-shrink:0;">
+                      {{ s.first_name|first }}
+                    </div>
+                    <div>
+                      <div class="fw-semibold">{{ s.full_name }}</div>
+                      <span class="badge badge-pending rounded-pill" style="font-size:11px;">{{ s.get_staff_type_display }}</span>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <div style="font-size:14px;">{{ s.phone }}</div>
+                  <div class="text-muted" style="font-size:12px;">{{ s.email }}</div>
+                </td>
+                <td>
+                  <div style="font-size:14px;">{{ s.establishment }}</div>
+                  <div class="text-muted" style="font-size:12px;"><i class="fas fa-map-marker-alt me-1"></i>{{ s.city }}</div>
+                </td>
+                <td>
+                  <div style="font-size:14px;">{{ s.years_experience }} ans</div>
+                  {% if s.specialty %}<div class="text-muted" style="font-size:12px;">{{ s.specialty }}</div>{% endif %}
+                </td>
+                <td style="font-size:13px;color:#6B7280;">{{ s.created_at|date:"d/m/Y" }}</td>
+                <td>
+                  <div class="d-flex gap-2">
+                    <button class="btn btn-verify" onclick="verifyStaff('{{ s.id }}', '{{ s.full_name }}')">
+                      <i class="fas fa-check me-1"></i>Valider
+                    </button>
+                    <button class="btn btn-reject" onclick="rejectStaff('{{ s.id }}', '{{ s.full_name }}')">
+                      <i class="fas fa-times me-1"></i>Rejeter
+                    </button>
+                    <a href="{% url 'web_admin:staff_detail' s.id %}" class="btn btn-outline-secondary btn-sm rounded-3">
+                      <i class="fas fa-eye"></i>
+                    </a>
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+          <i class="fas fa-check-circle fa-3x mb-3" style="color:#D1FAE5;"></i>
+          <p class="text-muted">Aucune inscription en attente de validation.</p>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- VÉRIFIÉS -->
+      <div class="tab-pane fade" id="verified-tab">
+        {% if verified %}
+        <div class="table-responsive">
+          <table class="table align-middle mb-0">
+            <thead>
+              <tr style="font-size:12px;color:#9CA3AF;font-weight:700;text-transform:uppercase;">
+                <th>Nom & Profession</th>
+                <th>Établissement</th>
+                <th>Scans QR</th>
+                <th>Vérifié le</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for s in verified %}
+              <tr class="staff-row">
+                <td>
+                  <div class="d-flex align-items-center gap-2">
+                    <div style="width:42px;height:42px;background:#D1FAE5;border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:700;color:#059669;font-size:16px;">
+                      {{ s.first_name|first }}
+                    </div>
+                    <div>
+                      <div class="fw-semibold">{{ s.full_name }}</div>
+                      <span class="badge badge-verified rounded-pill" style="font-size:11px;">{{ s.get_staff_type_display }}</span>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <div style="font-size:14px;">{{ s.establishment }}</div>
+                  <div class="text-muted" style="font-size:12px;">{{ s.city }}</div>
+                </td>
+                <td><span class="fw-bold" style="color:#7C3AED;">{{ s.total_scans }}</span></td>
+                <td style="font-size:13px;color:#6B7280;">{{ s.verified_at|date:"d/m/Y"|default:"—" }}</td>
+                <td>
+                  <div class="d-flex gap-2">
+                    <a href="{% url 'web_admin:staff_detail' s.id %}" class="btn btn-outline-secondary btn-sm rounded-3">
+                      <i class="fas fa-eye me-1"></i>Détails
+                    </a>
+                    <button class="btn btn-reject" style="font-size:12px;" onclick="rejectStaff('{{ s.id }}', '{{ s.full_name }}')">
+                      Suspendre
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+          <p class="text-muted">Aucun personnel vérifié pour l'instant.</p>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- REJETÉS -->
+      <div class="tab-pane fade" id="rejected-tab">
+        {% if rejected %}
+        <div class="table-responsive">
+          <table class="table align-middle mb-0">
+            <thead>
+              <tr style="font-size:12px;color:#9CA3AF;font-weight:700;text-transform:uppercase;">
+                <th>Nom</th>
+                <th>Contact</th>
+                <th>Établissement</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for s in rejected %}
+              <tr class="staff-row">
+                <td>
+                  <div class="fw-semibold">{{ s.full_name }}</div>
+                  <span class="badge badge-rejected rounded-pill" style="font-size:11px;">{{ s.get_staff_type_display }}</span>
+                </td>
+                <td style="font-size:14px;">{{ s.phone }}</td>
+                <td style="font-size:14px;">{{ s.establishment }} — {{ s.city }}</td>
+                <td>
+                  <button class="btn btn-verify" style="font-size:12px;" onclick="verifyStaff('{{ s.id }}', '{{ s.full_name }}')">
+                    <i class="fas fa-undo me-1"></i>Réactiver
+                  </button>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+          <p class="text-muted">Aucun compte rejeté.</p>
+        </div>
+        {% endif %}
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Toast notification -->
+<div class="toast-container">
+  <div id="actionToast" class="toast align-items-center text-white border-0" role="alert" style="border-radius:12px;">
+    <div class="d-flex">
+      <div class="toast-body fw-semibold" id="toastMsg"></div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+function getCookie(name) {
+  let v = document.cookie.match('(^|;) ?' + name + '=([^;]*)(;|$)');
+  return v ? v[2] : null;
+}
+
+function showToast(message, success=true) {
+  const toast = document.getElementById('actionToast');
+  toast.className = `toast align-items-center text-white border-0 ${success ? 'bg-success' : 'bg-danger'}`;
+  document.getElementById('toastMsg').textContent = message;
+  new bootstrap.Toast(toast, {delay: 3000}).show();
+}
+
+function verifyStaff(staffId, name) {
+  if (!confirm(`Valider le compte de ${name} ?`)) return;
+  fetch(`/portail-admin/staff/${staffId}/verify/`, {
+    method: 'POST',
+    headers: {'X-CSRFToken': getCookie('csrftoken')}
+  })
+  .then(r => r.json())
+  .then(data => { showToast(data.message); setTimeout(() => location.reload(), 1500); })
+  .catch(() => showToast('Erreur réseau', false));
+}
+
+function rejectStaff(staffId, name) {
+  if (!confirm(`Rejeter le compte de ${name} ?`)) return;
+  fetch(`/portail-admin/staff/${staffId}/reject/`, {
+    method: 'POST',
+    headers: {'X-CSRFToken': getCookie('csrftoken')}
+  })
+  .then(r => r.json())
+  .then(data => { showToast(data.message, false); setTimeout(() => location.reload(), 1500); })
+  .catch(() => showToast('Erreur réseau', false));
+}
+</script>
+</body>
+</html>

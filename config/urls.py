@@ -16,4 +16,7 @@ urlpatterns = [
     path('api/medical/', include('apps.medical.urls')),
     path('api/reminders/', include('apps.reminders.urls')),
     path('api/notifications/', include('apps.notifications.urls')),
+
+    # Portail Admin Personnel de Santé
+    path('portail-admin/', include('apps.web_admin.urls')),
 ]

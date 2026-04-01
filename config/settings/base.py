@@ -29,6 +29,7 @@ INSTALLED_APPS = [
     'apps.notifications',
     'apps.health_priority',
     'apps.sync',
+    'apps.web_admin',
 ]
 
 MIDDLEWARE = [
