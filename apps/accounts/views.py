@@ -22,15 +22,20 @@ def register(request):
     # Créer automatiquement le profil selon le rôle
     if role == 'PATIENT':
         from apps.patients.models import PatientProfile
+        country = request.data.get('country', '') or request.data.get('country_residence', '')
+        city = request.data.get('city', '') or request.data.get('city_residence', '')
+        district = request.data.get('district', '') or request.data.get('district_residence', '')
         PatientProfile.objects.get_or_create(
             user=user,
             defaults={
                 'first_name': request.data.get('first_name', ''),
                 'last_name': request.data.get('last_name', ''),
-                'date_of_birth': request.data.get('date_of_birth') or None,
-                'country': request.data.get('country', ''),
-                'city': request.data.get('city', ''),
-                'district': request.data.get('district', ''),
+                'date_of_birth': request.data.get('date_of_birth') or '2000-01-01',
+                'place_of_birth': request.data.get('place_of_birth', '') or city,
+                'country_of_birth': request.data.get('country_of_birth', '') or country,
+                'country_residence': country,
+                'city_residence': city,
+                'district_residence': district,
             }
         )
 
