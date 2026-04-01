@@ -18,8 +18,24 @@ def register(request):
         return Response({'error': 'Ce numéro est déjà utilisé'}, status=status.HTTP_400_BAD_REQUEST)
     
     user = User.objects.create_user(phone=phone, email=email, password=password, role=role)
+
+    # Créer automatiquement le profil selon le rôle
+    if role == 'PATIENT':
+        from apps.patients.models import PatientProfile
+        PatientProfile.objects.get_or_create(
+            user=user,
+            defaults={
+                'first_name': request.data.get('first_name', ''),
+                'last_name': request.data.get('last_name', ''),
+                'date_of_birth': request.data.get('date_of_birth') or None,
+                'country': request.data.get('country', ''),
+                'city': request.data.get('city', ''),
+                'district': request.data.get('district', ''),
+            }
+        )
+
     refresh = RefreshToken.for_user(user)
-    
+
     return Response({
         'access': str(refresh.access_token),
         'refresh': str(refresh),

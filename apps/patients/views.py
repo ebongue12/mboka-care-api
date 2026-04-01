@@ -9,7 +9,8 @@ class PatientProfileMeView(generics.RetrieveUpdateAPIView):
     serializer_class = PatientProfileSerializer
     
     def get_object(self):
-        return self.request.user.patient_profile
+        profile, _ = PatientProfile.objects.get_or_create(user=self.request.user)
+        return profile
 
 
 class FamilyMemberListCreateView(generics.ListCreateAPIView):
