@@ -30,6 +30,7 @@ INSTALLED_APPS = [
     'apps.health_priority',
     'apps.sync',
     'apps.web_admin',
+    'apps.health_tips',
 ]
 
 MIDDLEWARE = [
