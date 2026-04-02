@@ -7,4 +7,4 @@ services:
     startCommand: gunicorn config.wsgi:application
     envVars:
       - key: FCM_SERVER_KEY
-        value: BGyis1LlyxpzbebtFk0n-wjmooQ9d0J3WQFjASL0n7KsocJIB59Lp2tOWsqmqxhRlSgbFIusZUXgTWTRMUmhngE
+        sync: false  # À définir manuellement dans le dashboard Render (ne jamais committer cette valeur)

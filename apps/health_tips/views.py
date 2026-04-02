@@ -4,7 +4,7 @@ from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import api_view, permission_classes
-from django.db.models import Q
+from django.db.models import Q, F
 from .models import HealthTip
 from .serializers import HealthTipSerializer, HealthTipCreateSerializer
 
@@ -95,22 +95,16 @@ class PatientHealthTipsView(generics.ListAPIView):
         ).select_related('published_by')
 
     def list(self, request, *args, **kwargs):
-        queryset = self.get_queryset()
-        # Incrémenter le compteur de vues en bulk (silencieux)
-        queryset.update(views_count=queryset.model._meta.get_field('views_count').default)
         return super().list(request, *args, **kwargs)
 
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def mark_tip_viewed(request, tip_id):
-    """Incrémenter le compteur de vues d'une astuce."""
-    try:
-        HealthTip.objects.filter(id=tip_id).update(
-            views_count=__import__('django.db.models', fromlist=['F']).F('views_count') + 1
-        )
-    except Exception:
-        pass
+    """Incrémenter le compteur de vues d'une astuce (atomic)."""
+    HealthTip.objects.filter(id=tip_id, is_active=True).update(
+        views_count=F('views_count') + 1
+    )
     return Response({'ok': True})
 
 
@@ -137,10 +131,9 @@ class StaffHealthTipsView(generics.ListCreateAPIView):
         if staff is None:
             from rest_framework.exceptions import PermissionDenied
             raise PermissionDenied('Profil professionnel introuvable.')
-        tip = serializer.save(published_by=staff)
-        # Notification asynchrone (dans le même thread pour l'instant)
+        self._created_tip = serializer.save(published_by=staff)
         try:
-            _notify_patients_for_tip(tip)
+            _notify_patients_for_tip(self._created_tip)
         except Exception:
             pass
 
@@ -148,15 +141,8 @@ class StaffHealthTipsView(generics.ListCreateAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
-        # Retourner la représentation complète
-        tip = HealthTip.objects.select_related('published_by').get(
-            published_by__user=request.user,
-            title=serializer.validated_data['title'],
-        )
-        return Response(
-            HealthTipSerializer(tip).data,
-            status=status.HTTP_201_CREATED,
-        )
+        tip = HealthTip.objects.select_related('published_by').get(pk=self._created_tip.pk)
+        return Response(HealthTipSerializer(tip).data, status=status.HTTP_201_CREATED)
 
 
 class StaffHealthTipDetailView(generics.RetrieveUpdateDestroyAPIView):

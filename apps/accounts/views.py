@@ -56,11 +56,9 @@ def register(request):
         }, status=status.HTTP_201_CREATED)
 
     except Exception as e:
-        import traceback
         return Response({
             'error': 'Erreur serveur lors de l\'inscription',
             'detail': str(e),
-            'trace': traceback.format_exc()
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['POST'])

@@ -103,8 +103,9 @@ def scan_patient_qr(request):
         notes=notes,
     )
 
-    # Mettre à jour stats
-    HealthcareStaff.objects.filter(pk=staff.pk).update(total_scans=staff.total_scans + 1)
+    # Mettre à jour stats (atomic pour éviter les race conditions)
+    from django.db.models import F as DbF
+    HealthcareStaff.objects.filter(pk=staff.pk).update(total_scans=DbF('total_scans') + 1)
 
     # Construire le dossier complet
     from apps.patients.serializers import PatientProfileSerializer
