@@ -7,7 +7,7 @@ class UserManager(BaseUserManager):
         if not phone:
             raise ValueError('Le numéro de téléphone est obligatoire')
         
-        email = self.normalize_email(email) if email else None
+        email = self.normalize_email(email) if email else ''
         user = self.model(phone=phone, email=email, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)

@@ -9,43 +9,59 @@ from .serializers import UserSerializer
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def register(request):
-    phone = request.data.get('phone')
-    email = request.data.get('email')
-    password = request.data.get('password')
-    role = request.data.get('role', 'PATIENT')
-    
-    if User.objects.filter(phone=phone).exists():
-        return Response({'error': 'Ce numéro est déjà utilisé'}, status=status.HTTP_400_BAD_REQUEST)
-    
-    user = User.objects.create_user(phone=phone, email=email, password=password, role=role)
+    try:
+        phone = request.data.get('phone')
+        email = request.data.get('email') or None
+        password = request.data.get('password')
+        role = request.data.get('role', 'PATIENT')
 
-    # Créer automatiquement le profil selon le rôle
-    if role == 'PATIENT':
-        from apps.patients.models import PatientProfile
-        country = request.data.get('country', '') or request.data.get('country_residence', '')
-        city = request.data.get('city', '') or request.data.get('city_residence', '')
-        district = request.data.get('district', '') or request.data.get('district_residence', '')
-        PatientProfile.objects.get_or_create(
-            user=user,
-            defaults={
-                'first_name': request.data.get('first_name', ''),
-                'last_name': request.data.get('last_name', ''),
-                'date_of_birth': request.data.get('date_of_birth') or '2000-01-01',
-                'place_of_birth': request.data.get('place_of_birth', '') or city,
-                'country_of_birth': request.data.get('country_of_birth', '') or country,
-                'country_residence': country,
-                'city_residence': city,
-                'district_residence': district,
-            }
-        )
+        if not phone:
+            return Response({'error': 'Le numéro de téléphone est requis'}, status=status.HTTP_400_BAD_REQUEST)
 
-    refresh = RefreshToken.for_user(user)
+        if User.objects.filter(phone=phone).exists():
+            return Response({'error': 'Ce numéro est déjà utilisé'}, status=status.HTTP_400_BAD_REQUEST)
 
-    return Response({
-        'access': str(refresh.access_token),
-        'refresh': str(refresh),
-        'user': UserSerializer(user).data
-    }, status=status.HTTP_201_CREATED)
+        user = User.objects.create_user(phone=phone, email=email, password=password, role=role)
+
+        # Créer automatiquement le profil selon le rôle
+        if role == 'PATIENT':
+            from apps.patients.models import PatientProfile
+            country = request.data.get('country', '') or request.data.get('country_residence', '') or 'Non renseigné'
+            city = request.data.get('city', '') or request.data.get('city_residence', '') or 'Non renseigné'
+            district = request.data.get('district', '') or request.data.get('district_residence', '') or 'Non renseigné'
+            first_name = request.data.get('first_name', '') or 'Non renseigné'
+            last_name = request.data.get('last_name', '') or 'Non renseigné'
+            date_of_birth = request.data.get('date_of_birth') or '2000-01-01'
+
+            PatientProfile.objects.get_or_create(
+                user=user,
+                defaults={
+                    'first_name': first_name,
+                    'last_name': last_name,
+                    'date_of_birth': date_of_birth,
+                    'place_of_birth': request.data.get('place_of_birth', '') or city,
+                    'country_of_birth': request.data.get('country_of_birth', '') or country,
+                    'country_residence': country,
+                    'city_residence': city,
+                    'district_residence': district,
+                }
+            )
+
+        refresh = RefreshToken.for_user(user)
+
+        return Response({
+            'access': str(refresh.access_token),
+            'refresh': str(refresh),
+            'user': UserSerializer(user).data
+        }, status=status.HTTP_201_CREATED)
+
+    except Exception as e:
+        import traceback
+        return Response({
+            'error': 'Erreur serveur lors de l\'inscription',
+            'detail': str(e),
+            'trace': traceback.format_exc()
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
