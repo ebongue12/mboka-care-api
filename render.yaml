@@ -5,3 +5,6 @@ services:
     buildCommand: pip install -r requirements.txt
     preDeployCommand: python manage.py migrate && python manage.py collectstatic --noinput
     startCommand: gunicorn config.wsgi:application
+    envVars:
+      - key: FCM_SERVER_KEY
+        value: BGyis1LlyxpzbebtFk0n-wjmooQ9d0J3WQFjASL0n7KsocJIB59Lp2tOWsqmqxhRlSgbFIusZUXgTWTRMUmhngE
