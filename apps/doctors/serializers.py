@@ -82,7 +82,7 @@ class QRScanLogSerializer(serializers.ModelSerializer):
         fields = ['id', 'staff_name', 'staff_type', 'patient_name', 'timestamp', 'motif', 'notes']
 
     def get_patient_name(self, obj):
-        return f"{obj.patient.user.first_name} {obj.patient.user.last_name}"
+        return f"{obj.patient.first_name} {obj.patient.last_name}"
 
 
 class PatientFollowUpSerializer(serializers.ModelSerializer):
@@ -94,4 +94,4 @@ class PatientFollowUpSerializer(serializers.ModelSerializer):
         fields = ['id', 'patient_id', 'patient_name', 'added_at', 'notes', 'is_active']
 
     def get_patient_name(self, obj):
-        return f"{obj.patient.user.first_name} {obj.patient.user.last_name}"
+        return f"{obj.patient.first_name} {obj.patient.last_name}"

@@ -27,7 +27,9 @@ class ReminderListCreateView(generics.ListCreateAPIView):
         return Reminder.objects.none()
     
     def perform_create(self, serializer):
-        serializer.save(created_by=self.request.user)
+        user = self.request.user
+        patient = getattr(user, 'patient_profile', None)
+        serializer.save(created_by=user, patient=patient)
 
 
 class ReminderDetailView(generics.RetrieveUpdateDestroyAPIView):

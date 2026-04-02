@@ -10,7 +10,7 @@ class MedicalRecordListCreateView(generics.ListCreateAPIView):
     """Liste et création de dossiers médicaux"""
     permission_classes = [IsAuthenticated]
     serializer_class = MedicalRecordSerializer
-    
+
     def get_queryset(self):
         user = self.request.user
         if hasattr(user, 'patient_profile'):
@@ -21,9 +21,11 @@ class MedicalRecordListCreateView(generics.ListCreateAPIView):
                 is_deleted=False
             )
         return MedicalRecord.objects.none()
-    
+
     def perform_create(self, serializer):
-        serializer.save(created_by=self.request.user)
+        user = self.request.user
+        patient = getattr(user, 'patient_profile', None)
+        serializer.save(created_by=user, patient=patient)
 
 
 class MedicalRecordDetailView(generics.RetrieveUpdateDestroyAPIView):
@@ -65,7 +67,9 @@ class MedicalDocumentListCreateView(generics.ListCreateAPIView):
         return MedicalDocument.objects.none()
     
     def perform_create(self, serializer):
-        serializer.save(uploaded_by=self.request.user)
+        user = self.request.user
+        patient = getattr(user, 'patient_profile', None)
+        serializer.save(uploaded_by=user, patient=patient)
 
 
 class MedicalDocumentDetailView(generics.RetrieveUpdateDestroyAPIView):
