@@ -169,8 +169,9 @@ def add_patient_to_follow(request):
     )
 
     if created:
+        from django.db.models import F as DbF
         HealthcareStaff.objects.filter(pk=staff.pk).update(
-            total_patients_followed=staff.total_patients_followed + 1
+            total_patients_followed=DbF('total_patients_followed') + 1
         )
         return Response(PatientFollowUpSerializer(follow_up).data, status=status.HTTP_201_CREATED)
 

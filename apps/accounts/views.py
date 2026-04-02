@@ -55,10 +55,9 @@ def register(request):
             'user': UserSerializer(user).data
         }, status=status.HTTP_201_CREATED)
 
-    except Exception as e:
+    except Exception:
         return Response({
-            'error': 'Erreur serveur lors de l\'inscription',
-            'detail': str(e),
+            'error': 'Erreur serveur lors de l\'inscription. Veuillez réessayer.',
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['POST'])

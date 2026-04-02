@@ -3,7 +3,7 @@ from .models import Reminder, ReminderLog
 
 class ReminderSerializer(serializers.ModelSerializer):
     """Serializer pour rappel"""
-    
+
     class Meta:
         model = Reminder
         fields = [
@@ -19,6 +19,19 @@ class ReminderSerializer(serializers.ModelSerializer):
             'id', 'created_by', 'created_at', 'updated_at',
             'synced', 'synced_at'
         ]
+
+    def validate_time_slots(self, value):
+        import re
+        if not isinstance(value, list):
+            raise serializers.ValidationError("time_slots doit être une liste.")
+        if len(value) == 0:
+            raise serializers.ValidationError("Au moins un horaire est requis.")
+        for slot in value:
+            if not isinstance(slot, str) or not re.match(r'^\d{2}:\d{2}$', slot):
+                raise serializers.ValidationError(
+                    f"Format invalide : '{slot}'. Utilisez HH:MM (ex: '08:30')."
+                )
+        return value
 
 
 class ReminderLogSerializer(serializers.ModelSerializer):
